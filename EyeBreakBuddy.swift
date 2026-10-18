@@ -549,7 +549,7 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
         RunLoop.main.add(motionTimer!, forMode: .common)
     }
 
-    private func presentBuddy(_ p: NSPanel, onArrival: @escaping () -> Void = {}) {
+    private func presentBuddy(_ p: NSPanel, skipHiding: Bool = false, onArrival: @escaping () -> Void = {}) {
         guard shouldAnimateTransitions else {
             buddyPhase = .presenting
             p.orderFrontRegardless()
@@ -565,6 +565,19 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
         buddyView?.mood = .runLeft
         buddyView?.setFrameOrigin(NSPoint(x: edge, y: buddyBaselineY))
         p.orderFrontRegardless()
+        if skipHiding {
+            // A user-initiated water log gets an immediate entrance and celebration.
+            walk(p, from: edge, to: 0, speed: 300) { [weak self, weak p] in
+                guard let self = self, let p = p, self.panel === p, self.buddyPhase == .runningIn else { return }
+                p.setFrame(NSRect(x: p.frame.minX, y: p.frame.minY, width: 470, height: 270), display: true)
+                self.buddyView?.mood = restingMood
+                self.buddyPhase = .presenting
+                self.setBubbleVisible(true)
+                p.ignoresMouseEvents = false
+                onArrival()
+            }
+            return
+        }
         // Three distinct beats: run up, grip the screen and hide, then walk in.
         walk(p, from: edge, to: peekX, speed: 300) { [weak self, weak p] in
             guard let self = self, let p = p, self.panel === p, self.buddyPhase == .runningIn else { return }
@@ -788,7 +801,7 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
         } else {
             let (p, _) = buddyPanel(title: title, body: body, happy: true)
             buddyView?.mood = dance ? .dance : .happy
-            presentBuddy(p) { [weak self, weak p] in
+            presentBuddy(p, skipHiding: dance) { [weak self, weak p] in
                 guard let self = self, let p = p, self.panel === p else { return }
                 self.scheduleDeparture(p, after: dance ? 4.32 : 1.4)
             }

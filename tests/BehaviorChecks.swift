@@ -147,7 +147,11 @@ extension EyeBreakBuddyApp {
             }
             quickAdd(voluntaryItem)
             assert(buddyPhase == .runningIn && confirmationTimer == nil)
-            waitFor { self.buddyPhase == .presenting }
+            waitFor {
+                assert(self.buddyPhase != .peeking && self.peekTimer == nil,
+                       "Menu water logs must skip the hiding pose")
+                return self.buddyPhase == .presenting
+            }
             assert(buddyView?.mood == .dance && confirmationTimer != nil)
             waitFor { self.buddyPhase == .hidden }
             assert(danceTimer == nil && panel == nil)

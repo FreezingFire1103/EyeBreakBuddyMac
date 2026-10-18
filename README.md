@@ -58,7 +58,7 @@ This repository backs up the app and artwork. Personal water totals and settings
 
 ## Voluntary water celebration
 
-Menu-bar quick-add and custom water logs bring Chopper out for a 4.32-second
+Menu-bar quick-add and custom water logs bring Chopper directly in, skipping the hiding pose, for a 4.32-second
 folded-arm, bashful side-to-side dance, then he walks away. During an active eye
 break he dances in place without resetting or stopping the countdown. Repeated
 logs refresh the celebration. Popup water buttons retain the short happy reaction.
