@@ -112,6 +112,29 @@ extension EyeBreakBuddyApp {
                "Finishing a break must celebrate and stop the countdown")
         dismissPanel()
         assert(defaults.integer(forKey: "goalML") == 3000)
+        assert(ChopperView.danceAtlas != nil && ChopperView.danceFrames.count == 2)
+        for frame in ChopperView.danceFrames { assert(frame.width > 0 && frame.height > 0) }
+        let voluntaryItem = NSMenuItem()
+        voluntaryItem.representedObject = 150
+        let beforeDance = waterML
+        quickAdd(voluntaryItem)
+        assert(waterML == beforeDance + 150 && buddyView?.mood == .dance)
+        assert(confirmationTimer != nil && confirmationTimer!.fireDate.timeIntervalSinceNow > 4)
+        let dancePanel = panel
+        quickAdd(voluntaryItem)
+        assert(panel === dancePanel && waterML == beforeDance + 300,
+               "Repeated voluntary logs reuse the visible dancer and count once each")
+        dismissPanel()
+        showBreakPopup()
+        let preservedCountdown = countdownTimer
+        quickAdd(voluntaryItem)
+        assert(isBreakVisible && countdownTimer === preservedCountdown && buddyView?.mood == .dance)
+        danceTimer?.fire()
+        assert(buddyView?.mood == .greeting && countdownTimer === preservedCountdown)
+        quickAdd(voluntaryItem)
+        finishBreak()
+        assert(danceTimer == nil && buddyView?.mood == .happy)
+        dismissPanel()
         // Exercise actual timed entrances/exits separately from synchronous checks.
         animateTransitions = true
         if shouldAnimateTransitions {
@@ -122,6 +145,20 @@ extension EyeBreakBuddyApp {
                 }
                 assert(condition(), "Timed buddy transition did not complete")
             }
+            quickAdd(voluntaryItem)
+            assert(buddyPhase == .runningIn && confirmationTimer == nil)
+            waitFor { self.buddyPhase == .presenting }
+            assert(buddyView?.mood == .dance && confirmationTimer != nil)
+            waitFor { self.buddyPhase == .hidden }
+            assert(danceTimer == nil && panel == nil)
+            showBreakPopup()
+            quickAdd(voluntaryItem)
+            assert(pendingWaterDance && countdownTimer == nil)
+            waitFor { self.buddyPhase == .presenting }
+            assert(buddyView?.mood == .dance && countdownTimer != nil)
+            dismissPanel()
+            assert(danceTimer == nil && !pendingWaterDance)
+            waitFor { self.buddyPhase == .hidden }
             showBreakPopup()
             let walkingPanel = panel
             assert(buddyPhase == .runningIn && countdownTimer == nil && buddyView?.mood == .runLeft)

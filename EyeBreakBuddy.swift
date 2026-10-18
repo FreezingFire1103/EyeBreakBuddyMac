@@ -2,7 +2,7 @@ import Cocoa
 
 // Four poses share one transparent atlas. Animation runs only while a buddy is visible.
 final class ChopperView: NSView {
-    enum Mood { case greeting, happy, walkLeft, walkRight, runLeft, hiding }
+    enum Mood { case greeting, happy, dance, walkLeft, walkRight, runLeft, hiding }
     static let atlas: NSImage? = {
         let executable = URL(fileURLWithPath: CommandLine.arguments[0]).standardizedFileURL
         return NSImage(contentsOf: executable.deletingLastPathComponent()
@@ -18,6 +18,30 @@ final class ChopperView: NSView {
         return NSImage(contentsOf: executable.deletingLastPathComponent()
             .appendingPathComponent("Assets/chopper-edge-hold.png"))
     }()
+    static let danceAtlas: NSImage? = {
+        let executable = URL(fileURLWithPath: CommandLine.arguments[0]).standardizedFileURL
+        return NSImage(contentsOf: executable.deletingLastPathComponent()
+            .appendingPathComponent("Assets/chopper-dance.png"))
+    }()
+    // Measure once so transparent padding cannot introduce a sideways jump.
+    static let danceFrames: [NSRect] = {
+        guard let data = danceAtlas?.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: data) else { return [] }
+        return (0..<2).map { frame in
+            let start = frame * bitmap.pixelsWide / 2
+            let end = (frame + 1) * bitmap.pixelsWide / 2
+            var left = end, right = start, top = bitmap.pixelsHigh, bottom = 0
+            for y in 0..<bitmap.pixelsHigh {
+                for x in start..<end where (bitmap.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.1 {
+                    left = min(left, x); right = max(right, x)
+                    top = min(top, y); bottom = max(bottom, y)
+                }
+            }
+            return NSRect(x: left, y: bitmap.pixelsHigh - bottom - 1,
+                          width: right - left + 1, height: bottom - top + 1)
+        }
+    }()
+
     // Foot-center / ground-line anchors measured from this 1263 × 1245 atlas.
     // Equal-sized cells have different transparent padding; align the character,
     // not the cell, so changing expression cannot move him sideways.
@@ -69,6 +93,19 @@ final class ChopperView: NSView {
             return
         }
         let elapsed = Date().timeIntervalSince(started)
+        if mood == .dance, let dance = Self.danceAtlas, Self.danceFrames.count == 2 {
+            let frame = reduceMotion ? 0 : Int(elapsed / 0.36) % 2
+            let source = Self.danceFrames[frame]
+            let referenceCell = NSSize(width: atlas.size.width / 2, height: atlas.size.height / 2)
+            let reference = Self.alignedPoseRect(0, cell: referenceCell, bounds: bounds)
+            let floor = reference.minY + (1 - Self.footAnchors[0].y) * reference.height
+            let height = bounds.width * 0.90
+            let width = height * source.width / source.height
+            dance.draw(in: NSRect(x: bounds.midX - width / 2, y: floor, width: width, height: height),
+                       from: source, operation: .sourceOver, fraction: 1,
+                       respectFlipped: true, hints: [.interpolation: NSImageInterpolation.high])
+            return
+        }
         if mood == .hiding, let hiding = Self.hidingSprite {
             let scale = 0.85 * min(bounds.width / hiding.size.width, (bounds.height - 12) / hiding.size.height)
             let size = NSSize(width: hiding.size.width * scale, height: hiding.size.height * scale)
@@ -139,6 +176,8 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
     private var motionTimer: Timer?
     private var peekTimer: Timer?
     private var confirmationTimer: Timer?
+    private var danceTimer: Timer?
+    private var pendingWaterDance = false
     // Test harness can disable transitions while exercising synchronous legacy behavior.
     private var animateTransitions = true
     private var shouldAnimateTransitions: Bool {
@@ -575,6 +614,7 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
         presentBuddy(p) { [weak self, weak p, weak countdown] in
         guard let self = self, let p = p, self.panel === p, let countdown = countdown else { return }
         self.startCountdown(countdown, isLong: isLong)
+        if self.pendingWaterDance { self.danceDuringBreak() }
         }
     }
 
@@ -614,21 +654,37 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
 
     @objc private func addWater() { logWater(waterStepML) }
     @objc private func quickAdd(_ sender: NSMenuItem) {
-        if let amount = sender.representedObject as? Int { logWater(amount) }
+        if let amount = sender.representedObject as? Int { logWater(amount, voluntary: true) }
     }
     @objc private func customAdd() {
         if let amount = askNumber(title: "Log water", message: "Amount in millilitres.",
-                                  initial: waterStepML, range: 25...2000) { logWater(amount) }
+                                  initial: waterStepML, range: 25...2000) { logWater(amount, voluntary: true) }
     }
-    private func logWater(_ amount: Int) {
+    private func logWater(_ amount: Int, voluntary: Bool = false) {
         waterML += amount
         defaults.set(amount, forKey: keyForToday("lastWater"))
-        // Logging during an eye break must not replace its countdown.
-        if !isBreakVisible {
+        // A voluntary log can celebrate without replacing an active break.
+        if isBreakVisible && voluntary {
+            pendingWaterDance = true
+            if buddyPhase == .presenting { danceDuringBreak() }
+        } else if !isBreakVisible {
             showMiniMessage(avatar: waterML >= waterGoalML ? "✨" : "💧",
-                            title: "+\(amount) ml logged", body: "\(waterML) / \(waterGoalML) ml today")
+                            title: "+\(amount) ml logged", body: "\(waterML) / \(waterGoalML) ml today", dance: voluntary)
         }
     }
+    private func danceDuringBreak() {
+        pendingWaterDance = false
+        danceTimer?.invalidate()
+        buddyView?.mood = .dance
+        danceTimer = Timer(timeInterval: 4.32, repeats: false) { [weak self, weak panel] _ in
+            guard let self = self, let panel = panel, self.panel === panel,
+                  self.isBreakVisible, self.buddyPhase == .presenting else { return }
+            self.buddyView?.mood = .greeting
+            self.danceTimer = nil
+        }
+        RunLoop.main.add(danceTimer!, forMode: .common)
+    }
+
     @objc private func removeWater() {
         let last = defaults.integer(forKey: keyForToday("lastWater"))
         guard last > 0 else { return }
@@ -638,6 +694,9 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
     @objc private func showWaterProgress() { showWaterPopup() }
 
     private func closePanelImmediately() {
+        danceTimer?.invalidate()
+        danceTimer = nil
+        pendingWaterDance = false
         countdownTimer?.invalidate()
         countdownTimer = nil
         motionTimer?.invalidate()
@@ -655,6 +714,9 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
     }
 
     @objc private func dismissPanel() {
+        danceTimer?.invalidate()
+        danceTimer = nil
+        pendingWaterDance = false
         peekTimer?.invalidate()
         peekTimer = nil
         countdownTimer?.invalidate()
@@ -694,22 +756,25 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
         updateMenuTitle()
     }
 
-    private func scheduleDeparture(_ p: NSPanel) {
+    private func scheduleDeparture(_ p: NSPanel, after delay: TimeInterval = 1.4) {
         confirmationTimer?.invalidate()
-        confirmationTimer = Timer(timeInterval: 1.4, repeats: false) { [weak self, weak p] _ in
+        confirmationTimer = Timer(timeInterval: delay, repeats: false) { [weak self, weak p] _ in
             guard let self = self, let p = p, self.panel === p else { return }
             self.dismissPanel()
         }
         RunLoop.main.add(confirmationTimer!, forMode: .common)
     }
 
-    private func showMiniMessage(avatar: String, title: String, body: String) {
+    private func showMiniMessage(avatar: String, title: String, body: String, dance: Bool = false) {
+        danceTimer?.invalidate()
+        danceTimer = nil
+        pendingWaterDance = false
         // Celebrate in place, then leave. Do not create a second entrance on an action.
         if let p = panel, buddyPhase == .presenting, let root = p.contentView {
             countdownTimer?.invalidate()
             countdownTimer = nil
             isBreakVisible = false
-            buddyView?.mood = .happy
+            buddyView?.mood = dance ? .dance : .happy
             for view in root.subviews {
                 if let label = view as? NSTextField {
                     switch label.identifier?.rawValue {
@@ -719,12 +784,13 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
                     }
                 } else if view is NSButton { view.isHidden = true }
             }
-            scheduleDeparture(p)
+            scheduleDeparture(p, after: dance ? 4.32 : 1.4)
         } else {
             let (p, _) = buddyPanel(title: title, body: body, happy: true)
+            buddyView?.mood = dance ? .dance : .happy
             presentBuddy(p) { [weak self, weak p] in
                 guard let self = self, let p = p, self.panel === p else { return }
-                self.scheduleDeparture(p)
+                self.scheduleDeparture(p, after: dance ? 4.32 : 1.4)
             }
         }
     }

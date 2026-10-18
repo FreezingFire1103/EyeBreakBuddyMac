@@ -55,3 +55,14 @@ Tests compile the actual application code and run with a temporary, isolated pre
 Clone this repository, rebuild, and launch it. Keep the executable name `EyeBreakBuddy` to preserve compatibility with its original preference domain.
 
 This repository backs up the app and artwork. Personal water totals and settings remain in macOS UserDefaults on the device; they are not part of the Git repository.
+
+## Voluntary water celebration
+
+Menu-bar quick-add and custom water logs bring Chopper out for a 4.32-second
+folded-arm, bashful side-to-side dance, then he walks away. During an active eye
+break he dances in place without resetting or stopping the countdown. Repeated
+logs refresh the celebration. Popup water buttons retain the short happy reaction.
+Reduce Motion shows a still dance pose and skips travel.
+
+Dance movement reference: https://tenor.com/en-GB/view/happy-dance-moves-anime-one-piece-chopper-gif-22319328
+The two transparent poses keep the existing outfit and are registered at a common floor line.
