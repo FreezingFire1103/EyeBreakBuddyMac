@@ -155,24 +155,22 @@ final class ChopperView: NSView {
 
 final class SpeechBubbleView: NSView {
     override func draw(_ dirtyRect: NSRect) {
-        // One continuous ink outline, including the tail toward Chopper's mouth.
+        // Soft, slightly asymmetric oval with a short integrated speech tail.
         let ink = NSBezierPath()
-        ink.move(to: NSPoint(x: 64, y: 216))
-        ink.curve(to: NSPoint(x: 278, y: 214), controlPoint1: NSPoint(x: 124, y: 224), controlPoint2: NSPoint(x: 242, y: 220))
-        ink.curve(to: NSPoint(x: 312, y: 174), controlPoint1: NSPoint(x: 304, y: 210), controlPoint2: NSPoint(x: 313, y: 194))
-        ink.curve(to: NSPoint(x: 310, y: 40), controlPoint1: NSPoint(x: 316, y: 131), controlPoint2: NSPoint(x: 314, y: 72))
-        ink.curve(to: NSPoint(x: 274, y: 5), controlPoint1: NSPoint(x: 307, y: 16), controlPoint2: NSPoint(x: 296, y: 6))
-        ink.curve(to: NSPoint(x: 70, y: 5), controlPoint1: NSPoint(x: 210, y: 0), controlPoint2: NSPoint(x: 118, y: 1))
-        ink.curve(to: NSPoint(x: 39, y: 49), controlPoint1: NSPoint(x: 45, y: 7), controlPoint2: NSPoint(x: 39, y: 24))
-        ink.line(to: NSPoint(x: 39, y: 79))
-        ink.line(to: NSPoint(x: 4, y: 60))
-        ink.line(to: NSPoint(x: 39, y: 110))
-        ink.curve(to: NSPoint(x: 64, y: 216), controlPoint1: NSPoint(x: 35, y: 173), controlPoint2: NSPoint(x: 34, y: 207))
+        ink.move(to: NSPoint(x: 49, y: 137))
+        ink.curve(to: NSPoint(x: 255, y: 138), controlPoint1: NSPoint(x: 90, y: 154), controlPoint2: NSPoint(x: 219, y: 151))
+        ink.curve(to: NSPoint(x: 292, y: 82), controlPoint1: NSPoint(x: 285, y: 127), controlPoint2: NSPoint(x: 292, y: 106))
+        ink.curve(to: NSPoint(x: 258, y: 17), controlPoint1: NSPoint(x: 294, y: 51), controlPoint2: NSPoint(x: 284, y: 27))
+        ink.curve(to: NSPoint(x: 62, y: 17), controlPoint1: NSPoint(x: 213, y: 0), controlPoint2: NSPoint(x: 109, y: 2))
+        ink.curve(to: NSPoint(x: 37, y: 34), controlPoint1: NSPoint(x: 51, y: 21), controlPoint2: NSPoint(x: 43, y: 27))
+        ink.line(to: NSPoint(x: 3, y: 4))
+        ink.line(to: NSPoint(x: 26, y: 53))
+        ink.curve(to: NSPoint(x: 49, y: 137), controlPoint1: NSPoint(x: 15, y: 87), controlPoint2: NSPoint(x: 25, y: 123))
         ink.close()
         NSColor.white.setFill()
         ink.fill()
         NSColor.black.setStroke()
-        ink.lineWidth = 2.5
+        ink.lineWidth = 1.8
         ink.lineJoinStyle = .round
         ink.stroke()
     }
@@ -517,16 +515,25 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
         buddy.mood = happy ? .happy : .greeting
         root.addSubview(buddy)
         buddyView = buddy
-        let bubble = SpeechBubbleView(frame: NSRect(x: 150, y: 35, width: 315, height: 220))
+        let bubble = SpeechBubbleView(frame: NSRect(x: 170, y: 105, width: 295, height: 150))
         root.addSubview(bubble)
-        let heading = label(title, size: 17, weight: .heavy, alignment: .center)
+        let heading = label(title.uppercased(), size: 18, weight: .medium, alignment: .center)
+        heading.font = NSFont(name: "ChalkboardSE-Regular", size: 18) ?? heading.font
         heading.identifier = NSUserInterfaceItemIdentifier("buddyTitle")
-        heading.frame = NSRect(x: 208, y: 192, width: 234, height: 48)
+        heading.frame = NSRect(x: 218, y: 204, width: 222, height: 28)
         root.addSubview(heading)
-        let message = label(body, size: 14, weight: .medium, alignment: .center)
+        let message = label(body.uppercased(), size: 15, alignment: .center)
+        message.font = NSFont(name: "ChalkboardSE-Regular", size: 15) ?? message.font
         message.identifier = NSUserInterfaceItemIdentifier("buddyMessage")
-        message.frame = NSRect(x: 210, y: 121, width: 230, height: 70)
+        message.frame = NSRect(x: 218, y: 137, width: 222, height: 64)
         root.addSubview(message)
+        let controls = NSView(frame: NSRect(x: 195, y: 26, width: 266, height: 72))
+        controls.identifier = NSUserInterfaceItemIdentifier("controlsBackdrop")
+        controls.wantsLayer = true
+        controls.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.96).cgColor
+        controls.layer?.cornerRadius = 12
+        root.addSubview(controls)
+        root.appearance = NSAppearance(named: .aqua)
         return (p, root)
     }
 
@@ -620,23 +627,26 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
         breakCount += 1
         let isLong = longBreakEvery > 0 && breakCount % longBreakEvery == 0
         countdownRemaining = isLong ? 300 : 20
-        let (p, root) = buddyPanel(title: isLong ? "Time for a longer reset!" : "Let's rest your eyes!",
-            body: isLong ? "Step away for five minutes. Stretch, blink, and relax. I'll keep time!" :
-            "Look about 20 feet away and blink gently for 20 seconds. You've got this!")
+        let (p, root) = buddyPanel(title: isLong ? "Let's take a break!" : "Rest your eyes!",
+            body: isLong ? "Take five minutes. Stretch and relax. I'll keep time!" :
+            "Look 20 feet away for 20 seconds. Give those eyes a rest!")
         isBreakVisible = true
         playSound()
-        let countdown = label(isLong ? "5:00" : "20s", size: 22, weight: .bold)
+        let countdown = label(isLong ? "5:00" : "20s", size: 17, weight: .semibold)
         countdown.identifier = NSUserInterfaceItemIdentifier("countdown")
-        countdown.frame = NSRect(x: 204, y: 92, width: 240, height: 28)
+        countdown.alignment = .center
+        countdown.font = .monospacedDigitSystemFont(ofSize: 17, weight: .medium)
+        countdown.frame = NSRect(x: 204, y: 69, width: 246, height: 23)
         root.addSubview(countdown)
         let done = button("Done", action: #selector(finishBreak))
-        done.frame = NSRect(x: 378, y: 49, width: 73, height: 32)
+        done.keyEquivalent = "\r"
+        done.frame = NSRect(x: 378, y: 32, width: 73, height: 32)
         root.addSubview(done)
         let water = button("+\(waterStepML) ml", action: #selector(addWater))
-        water.frame = NSRect(x: 286, y: 49, width: 90, height: 32)
+        water.frame = NSRect(x: 286, y: 32, width: 90, height: 32)
         root.addSubview(water)
         let snooze = button("Snooze 5m", action: #selector(snoozeBreak))
-        snooze.frame = NSRect(x: 197, y: 49, width: 89, height: 32)
+        snooze.frame = NSRect(x: 197, y: 32, width: 89, height: 32)
         root.addSubview(snooze)
         presentBuddy(p) { [weak self, weak p, weak countdown] in
         guard let self = self, let p = p, self.panel === p, let countdown = countdown else { return }
@@ -666,10 +676,11 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
         let (p, root) = buddyPanel(title: "Water check!",
                                   body: "You've logged \(waterML) of \(waterGoalML) ml today. Time for a sip?")
         let add = button("+\(waterStepML) ml", action: #selector(addWater))
-        add.frame = NSRect(x: 202, y: 58, width: 115, height: 32)
+        add.keyEquivalent = "\r"
+        add.frame = NSRect(x: 202, y: 45, width: 115, height: 32)
         root.addSubview(add)
         let later = button("Later", action: #selector(dismissPanel))
-        later.frame = NSRect(x: 327, y: 58, width: 115, height: 32)
+        later.frame = NSRect(x: 327, y: 45, width: 115, height: 32)
         root.addSubview(later)
         presentBuddy(p)
     }
@@ -805,18 +816,20 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
             for view in root.subviews {
                 if let label = view as? NSTextField {
                     switch label.identifier?.rawValue {
-                    case "buddyTitle": label.stringValue = title
-                    case "buddyMessage": label.stringValue = body
+                    case "buddyTitle": label.stringValue = title.uppercased()
+                    case "buddyMessage": label.stringValue = body.uppercased()
                     default: label.isHidden = true
                     }
-                } else if view is NSButton { view.isHidden = true }
+                } else if view is NSButton || view.identifier?.rawValue == "controlsBackdrop" { view.isHidden = true }
             }
             scheduleDeparture(p, after: dance ? 4.32 : 1.4)
         } else {
             let (p, _) = buddyPanel(title: title, body: body, happy: true)
             buddyView?.mood = dance ? .dance : .happy
+            p.contentView?.subviews.first { $0.identifier?.rawValue == "controlsBackdrop" }?.isHidden = true
             presentBuddy(p, skipHiding: dance) { [weak self, weak p] in
                 guard let self = self, let p = p, self.panel === p else { return }
+                p.contentView?.subviews.first { $0.identifier?.rawValue == "controlsBackdrop" }?.isHidden = true
                 self.scheduleDeparture(p, after: dance ? 4.32 : 1.4)
             }
         }

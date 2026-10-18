@@ -73,3 +73,8 @@ Reminder and confirmation messages use white manga-style dialogue bubbles with
 bold black outlines, a tail toward Chopper, and centered dark text. The bubble
 stays readable in both macOS light and dark appearances; native action buttons
 and countdown behavior are unchanged.
+
+Dialogue refinement: uses macOS Chalkboard SE uppercase lettering (system fallback),
+a smaller organic oval, short copy, and a separate native control area. Dialogue
+is intentionally distinct from the timer and actions. Done / add-water are the
+primary keyboard actions while the panel has focus. Celebrations hide controls.
