@@ -155,12 +155,26 @@ final class ChopperView: NSView {
 
 final class SpeechBubbleView: NSView {
     override func draw(_ dirtyRect: NSRect) {
-        NSColor.windowBackgroundColor.withAlphaComponent(0.98).setFill()
-        let bubble = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 22, yRadius: 22)
-        bubble.fill()
-        NSColor.separatorColor.setStroke()
-        bubble.lineWidth = 1
-        bubble.stroke()
+        // One continuous ink outline, including the tail toward Chopper's mouth.
+        let ink = NSBezierPath()
+        ink.move(to: NSPoint(x: 64, y: 216))
+        ink.curve(to: NSPoint(x: 278, y: 214), controlPoint1: NSPoint(x: 124, y: 224), controlPoint2: NSPoint(x: 242, y: 220))
+        ink.curve(to: NSPoint(x: 312, y: 174), controlPoint1: NSPoint(x: 304, y: 210), controlPoint2: NSPoint(x: 313, y: 194))
+        ink.curve(to: NSPoint(x: 310, y: 40), controlPoint1: NSPoint(x: 316, y: 131), controlPoint2: NSPoint(x: 314, y: 72))
+        ink.curve(to: NSPoint(x: 274, y: 5), controlPoint1: NSPoint(x: 307, y: 16), controlPoint2: NSPoint(x: 296, y: 6))
+        ink.curve(to: NSPoint(x: 70, y: 5), controlPoint1: NSPoint(x: 210, y: 0), controlPoint2: NSPoint(x: 118, y: 1))
+        ink.curve(to: NSPoint(x: 39, y: 49), controlPoint1: NSPoint(x: 45, y: 7), controlPoint2: NSPoint(x: 39, y: 24))
+        ink.line(to: NSPoint(x: 39, y: 79))
+        ink.line(to: NSPoint(x: 4, y: 60))
+        ink.line(to: NSPoint(x: 39, y: 110))
+        ink.curve(to: NSPoint(x: 64, y: 216), controlPoint1: NSPoint(x: 35, y: 173), controlPoint2: NSPoint(x: 34, y: 207))
+        ink.close()
+        NSColor.white.setFill()
+        ink.fill()
+        NSColor.black.setStroke()
+        ink.lineWidth = 2.5
+        ink.lineJoinStyle = .round
+        ink.stroke()
     }
 }
 
@@ -477,7 +491,7 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
         let l = NSTextField(labelWithString: text)
         l.font = .systemFont(ofSize: size, weight: weight)
         l.alignment = alignment
-        l.textColor = .labelColor
+        l.textColor = .black
         l.lineBreakMode = .byWordWrapping
         l.maximumNumberOfLines = 0
         return l
@@ -503,15 +517,15 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
         buddy.mood = happy ? .happy : .greeting
         root.addSubview(buddy)
         buddyView = buddy
-        let bubble = SpeechBubbleView(frame: NSRect(x: 185, y: 35, width: 280, height: 220))
+        let bubble = SpeechBubbleView(frame: NSRect(x: 150, y: 35, width: 315, height: 220))
         root.addSubview(bubble)
-        let heading = label(title, size: 18, weight: .bold)
+        let heading = label(title, size: 17, weight: .heavy, alignment: .center)
         heading.identifier = NSUserInterfaceItemIdentifier("buddyTitle")
-        heading.frame = NSRect(x: 202, y: 208, width: 246, height: 28)
+        heading.frame = NSRect(x: 208, y: 192, width: 234, height: 48)
         root.addSubview(heading)
-        let message = label(body, size: 14)
+        let message = label(body, size: 14, weight: .medium, alignment: .center)
         message.identifier = NSUserInterfaceItemIdentifier("buddyMessage")
-        message.frame = NSRect(x: 202, y: 125, width: 246, height: 76)
+        message.frame = NSRect(x: 210, y: 121, width: 230, height: 70)
         root.addSubview(message)
         return (p, root)
     }

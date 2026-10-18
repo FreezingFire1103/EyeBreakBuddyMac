@@ -66,3 +66,10 @@ Reduce Motion shows a still dance pose and skips travel.
 
 Dance movement reference: https://tenor.com/en-GB/view/happy-dance-moves-anime-one-piece-chopper-gif-22319328
 The two transparent poses keep the existing outfit and are registered at a common floor line.
+
+## Dialogue bubbles
+
+Reminder and confirmation messages use white manga-style dialogue bubbles with
+bold black outlines, a tail toward Chopper, and centered dark text. The bubble
+stays readable in both macOS light and dark appearances; native action buttons
+and countdown behavior are unchanged.
