@@ -1,0 +1,5 @@
+Jerry walking animation reference supplied and approved by the user:
+https://tenor.com/en-GB/view/jerry-the-mouse-tom-and-jerry-walking-feeling-good-good-vibes-gif-17018204
+22 frames, 70 ms each. Background removed with Apple Vision.
+Identical 185 x 180 crop across frames preserves original motion.
+Source is low-resolution; no generated interpolation frames.

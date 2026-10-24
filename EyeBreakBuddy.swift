@@ -75,7 +75,7 @@ final class ChopperView: NSView {
     static let jerryPoses: [JerryPose] = {
         let directory = URL(fileURLWithPath: CommandLine.arguments[0]).standardizedFileURL
             .deletingLastPathComponent().appendingPathComponent("Assets/Jerry")
-        return (0..<14).compactMap { index in
+        return (0..<30).compactMap { index in
             let filename = index < 8 ? "pose-\(index).png" : "walk-\(index - 8).png"
             guard let image = NSImage(contentsOf: directory.appendingPathComponent(filename)),
                   let data = image.tiffRepresentation, let bitmap = NSBitmapImageRep(data: data) else { return nil }
@@ -94,13 +94,11 @@ final class ChopperView: NSView {
                 }
             }
             if index >= 8 {
-                // Register travel frames on the head, not the alternating planted foot.
-                footLeft = right; footRight = left
-                for y in top...(top + (bottom - top) / 2) {
-                    for x in left...right where (bitmap.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.5 {
-                        footLeft = min(footLeft, x); footRight = max(footRight, x)
-                    }
-                }
+                // Keep the reference's shared canvas: per-frame cropping would erase
+                // the original bounce and shift the feet between steps.
+                return JerryPose(image: image,
+                    source: NSRect(x: 0, y: 0, width: bitmap.pixelsWide, height: bitmap.pixelsHigh),
+                    footX: CGFloat(bitmap.pixelsWide) / 2)
             }
             // Crop only for drawing; keep the original alpha assets intact.
             return JerryPose(image: image,
@@ -121,13 +119,13 @@ final class ChopperView: NSView {
         case .happy: return 2
         case .dance: return reduceMotion ? 6 : 6 + Int(elapsed / 0.36) % 2
         case .walkLeft, .walkRight, .runLeft:
-            return reduceMotion ? 8 : 8 + Int(elapsed / (mood == .runLeft ? 0.07 : 0.11)) % 6
+            return reduceMotion ? 8 : 8 + Int(elapsed / 0.07) % 22
         case .greeting:
             return !reduceMotion && elapsed.truncatingRemainder(dividingBy: 4.5) > 4.15 ? 1 : 0
         }
     }
     private func drawJerry(elapsed: TimeInterval) {
-        guard Self.jerryPoses.count == 14 else {
+        guard Self.jerryPoses.count == 30 else {
             ("🐭" as NSString).draw(in: bounds.insetBy(dx: 30, dy: 50),
                 withAttributes: [.font: NSFont.systemFont(ofSize: 90)])
             return
@@ -135,13 +133,10 @@ final class ChopperView: NSView {
         let frame = Self.jerryFrame(mood: mood, elapsed: elapsed, reduceMotion: reduceMotion)
         let pose = Self.jerryPoses[frame]
         var scale = min(180 / pose.source.height, (bounds.width - 10) / pose.source.width)
-        var anchor = bounds.midX
+        let anchor = bounds.midX
         if frame >= 8 {
-            let frames = Self.jerryPoses.suffix(6)
-            anchor = bounds.width * 0.40
-            scale = min(180 / frames.map { $0.source.height }.max()!,
-                        (anchor - 4) / frames.map { $0.footX }.max()!,
-                        (bounds.width - anchor - 4) / frames.map { $0.source.width - $0.footX }.max()!)
+            // All 22 frames use an identical crop, scale and origin.
+            scale = min(180 / pose.source.height, (bounds.width - 10) / pose.source.width)
         }
         let destination = NSRect(x: anchor - pose.footX * scale, y: 34,
                                  width: pose.source.width * scale, height: pose.source.height * scale)
@@ -669,7 +664,9 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
                       completion: @escaping () -> Void) {
         motionTimer?.invalidate()
         let started = Date()
-        let duration = max(0.6, Double(abs(endX - startX)) / speed)
+        // Jerry keeps the approved relaxed cadence even during the entrance beat.
+        let travelSpeed = buddyView?.character == .jerry ? min(speed, 110) : speed
+        let duration = max(0.6, Double(abs(endX - startX)) / travelSpeed)
         buddyView?.setFrameOrigin(NSPoint(x: startX, y: buddyBaselineY))
         motionTimer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self, weak p] timer in
             guard let self = self, let p = p, self.panel === p else { timer.invalidate(); return }

@@ -36,7 +36,7 @@ extension EyeBreakBuddyApp {
             assert(abs(foot.x - registeredFeet[0].x) < 0.25 && abs(foot.y - registeredFeet[0].y) < 0.25,
                    "Expression changes must keep feet registered to the same position")
         }
-        assert(ChopperView.jerryPoses.count == 14, "All Jerry actions need transparent assets")
+        assert(ChopperView.jerryPoses.count == 30, "All Jerry actions need transparent assets")
         for pose in ChopperView.jerryPoses {
             let bitmap = NSBitmapImageRep(data: pose.image.tiffRepresentation!)!
             assert(bitmap.hasAlpha && bitmap.colorAt(x: 0, y: 0)!.alphaComponent < 0.01)
@@ -46,10 +46,15 @@ extension EyeBreakBuddyApp {
         assert(ChopperView.jerryFrame(mood: .greeting, elapsed: 4.3, reduceMotion: true) == 0)
         assert(ChopperView.jerryFrame(mood: .dance, elapsed: 0.4, reduceMotion: false) == 7)
         assert(ChopperView.jerryFrame(mood: .dance, elapsed: 0.4, reduceMotion: true) == 6)
-        for frame in 0..<6 {
-            assert(ChopperView.jerryFrame(mood: .walkLeft, elapsed: Double(frame) * 0.11 + 0.01, reduceMotion: false) == 8 + frame)
+        for frame in 0..<22 {
+            assert(ChopperView.jerryFrame(mood: .walkLeft, elapsed: Double(frame) * 0.07 + 0.01, reduceMotion: false) == 8 + frame)
         }
-        assert(ChopperView.jerryFrame(mood: .walkRight, elapsed: 0.67, reduceMotion: false) == 8)
+        assert(ChopperView.jerryFrame(mood: .walkRight, elapsed: 1.55, reduceMotion: false) == 8)
+        assert(ChopperView.jerryFrame(mood: .runLeft, elapsed: 0.15, reduceMotion: false) == 10)
+        assert(ChopperView.jerryFrame(mood: .walkLeft, elapsed: 0.5, reduceMotion: true) == 8)
+        let walkCanvas = ChopperView.jerryPoses[8].source
+        assert(ChopperView.jerryPoses.suffix(22).allSatisfy { $0.source == walkCanvas },
+               "Reference frames must retain their common canvas and original bounce")
         let jerryChoice = NSMenuItem()
         jerryChoice.representedObject = "jerry"
         showBreakPopup()
