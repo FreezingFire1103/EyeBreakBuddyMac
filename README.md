@@ -88,10 +88,12 @@ walk/run, edge-peek, completion cheer, and voluntary water-dance poses. Both use
 the same settings, dialogue bubbles, pause/snooze, Reduce Motion support, and
 water controls. Voluntary menu logs skip hiding for both characters.
 
-Jerry travel uses the approved reference’s 22 original frames at 70 ms per frame,
-with an identical canvas and scale to preserve its bounce and stepping motion.
-Entrance and exit travel use a relaxed 110 points/second. The reference artwork
-is low-resolution; its soft appearance is retained. See Assets/Jerry/WALK-SOURCE.txt.
+Jerry travel uses 22 cleaned animation frames at 70 ms per frame, rebuilt to
+match the original Jerry character's face, round pink ears, colors and proportions.
+The frames share a fixed canvas; exit mirrors entrance. Travel remains at
+110 points/second. Original idle/blink, hiding, cheer and water-dance poses are
+retained. See docs/Jerry-approved-actions.gif for the approved action preview
+and Assets/Jerry/WALK-SOURCE.txt for generation notes.
 Visible animation redraws at 30 Hz. Water totals are stored immediately through
 macOS UserDefaults per local calendar day and survive normal quit/relaunch and
 restart. The app itself must be reopened after login; no login item is installed.

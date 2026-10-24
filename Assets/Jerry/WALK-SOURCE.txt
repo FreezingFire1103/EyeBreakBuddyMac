@@ -1,5 +1,3 @@
-Jerry walking animation reference supplied and approved by the user:
-https://tenor.com/en-GB/view/jerry-the-mouse-tom-and-jerry-walking-feeling-good-good-vibes-gif-17018204
-22 frames, 70 ms each. Background removed with Apple Vision.
-Identical 185 x 180 crop across frames preserves original motion.
-Source is low-resolution; no generated interpolation frames.
+Approved by the user and integrated into the application. Built-in image generation with original Jerry pose-0 as the character model and the previous 22-frame sheet as a movement guide. Local Apple Vision background extraction. Existing original idle/blink, hiding, cheer and dance artwork retained. Walk-out mirrors the new walk-in sequence.
+
+Prompt: Create a 22-frame walking animation sprite sheet of the Jerry character in reference image 1. Match his original face, large round pink ears, warm orange-brown fur, tan muzzle and belly, tall oval eyes, large pupils, friendly expression, proportions and drawing style. Reference image 2 supplies only the sequence of walking poses; use image 1 for character appearance throughout. Left-facing relaxed walk, natural arm swing and alternating steps. Arrange 22 sequential frames in six equal columns and four equal rows with the last two cells empty. Keep consistent character size, position and drawing style across frames. Full character including ears and tail fits in each cell. Plain white background, no labels or shadows. This is an animation asset for the user's native desktop companion app.
