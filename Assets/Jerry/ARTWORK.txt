@@ -31,3 +31,10 @@ Pose mapping:
 0 idle, 1 blink, 2 completion cheer, 3 edge peek, 4/5 left walk/run,
 6/7 voluntary-water dance. Rightward exit mirrors walk poses in native drawing.
 Rendering measures opaque bounds and foot anchors, preserving the floor line.
+
+Walk update: six separate generated left-facing phases, read across a 3x2 sheet:
+contact, recoil, passing, opposite contact, recoil, passing. Prompt requested
+identical scale, torso center, baseline, generous margins and transparent alpha.
+Built-in image generation followed by the user-approved Apple Vision foreground
+removal. Final assets walk-0.png through walk-5.png. Native renderer uses shared
+scale, head anchors and floor alignment; exit mirrors the same cycle.

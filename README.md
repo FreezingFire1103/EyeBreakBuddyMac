@@ -87,3 +87,9 @@ without resetting its countdown or changing water totals. Jerry has idle/blink,
 walk/run, edge-peek, completion cheer, and voluntary water-dance poses. Both use
 the same settings, dialogue bubbles, pause/snooze, Reduce Motion support, and
 water controls. Voluntary menu logs skip hiding for both characters.
+
+Jerry travel uses six distinct walk frames (110 ms walking / 70 ms running),
+with a shared scale and head registration to avoid foot-driven sideways jitter.
+Visible animation redraws at 30 Hz. Water totals are stored immediately through
+macOS UserDefaults per local calendar day and survive normal quit/relaunch and
+restart. The app itself must be reopened after login; no login item is installed.

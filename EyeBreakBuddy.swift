@@ -75,8 +75,9 @@ final class ChopperView: NSView {
     static let jerryPoses: [JerryPose] = {
         let directory = URL(fileURLWithPath: CommandLine.arguments[0]).standardizedFileURL
             .deletingLastPathComponent().appendingPathComponent("Assets/Jerry")
-        return (0..<8).compactMap { index in
-            guard let image = NSImage(contentsOf: directory.appendingPathComponent("pose-\(index).png")),
+        return (0..<14).compactMap { index in
+            let filename = index < 8 ? "pose-\(index).png" : "walk-\(index - 8).png"
+            guard let image = NSImage(contentsOf: directory.appendingPathComponent(filename)),
                   let data = image.tiffRepresentation, let bitmap = NSBitmapImageRep(data: data) else { return nil }
             var left = bitmap.pixelsWide, right = 0, top = bitmap.pixelsHigh, bottom = 0
             for y in 0..<bitmap.pixelsHigh {
@@ -90,6 +91,15 @@ final class ChopperView: NSView {
             for y in (bottom - (bottom - top) / 8)...bottom {
                 for x in left...right where (bitmap.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.5 {
                     footLeft = min(footLeft, x); footRight = max(footRight, x)
+                }
+            }
+            if index >= 8 {
+                // Register travel frames on the head, not the alternating planted foot.
+                footLeft = right; footRight = left
+                for y in top...(top + (bottom - top) / 2) {
+                    for x in left...right where (bitmap.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.5 {
+                        footLeft = min(footLeft, x); footRight = max(footRight, x)
+                    }
                 }
             }
             // Crop only for drawing; keep the original alpha assets intact.
@@ -111,21 +121,29 @@ final class ChopperView: NSView {
         case .happy: return 2
         case .dance: return reduceMotion ? 6 : 6 + Int(elapsed / 0.36) % 2
         case .walkLeft, .walkRight, .runLeft:
-            return reduceMotion ? 4 : 4 + Int(elapsed / (mood == .runLeft ? 0.12 : 0.32)) % 2
+            return reduceMotion ? 8 : 8 + Int(elapsed / (mood == .runLeft ? 0.07 : 0.11)) % 6
         case .greeting:
             return !reduceMotion && elapsed.truncatingRemainder(dividingBy: 4.5) > 4.15 ? 1 : 0
         }
     }
     private func drawJerry(elapsed: TimeInterval) {
-        guard Self.jerryPoses.count == 8 else {
+        guard Self.jerryPoses.count == 14 else {
             ("🐭" as NSString).draw(in: bounds.insetBy(dx: 30, dy: 50),
                 withAttributes: [.font: NSFont.systemFont(ofSize: 90)])
             return
         }
         let frame = Self.jerryFrame(mood: mood, elapsed: elapsed, reduceMotion: reduceMotion)
         let pose = Self.jerryPoses[frame]
-        let scale = min(180 / pose.source.height, (bounds.width - 10) / pose.source.width)
-        let destination = NSRect(x: bounds.midX - pose.footX * scale, y: 34,
+        var scale = min(180 / pose.source.height, (bounds.width - 10) / pose.source.width)
+        var anchor = bounds.midX
+        if frame >= 8 {
+            let frames = Self.jerryPoses.suffix(6)
+            anchor = bounds.width * 0.40
+            scale = min(180 / frames.map { $0.source.height }.max()!,
+                        (anchor - 4) / frames.map { $0.footX }.max()!,
+                        (bounds.width - anchor - 4) / frames.map { $0.source.width - $0.footX }.max()!)
+        }
+        let destination = NSRect(x: anchor - pose.footX * scale, y: 34,
                                  width: pose.source.width * scale, height: pose.source.height * scale)
         NSGraphicsContext.saveGraphicsState()
         if mood == .walkRight {
@@ -149,7 +167,7 @@ final class ChopperView: NSView {
         setAccessibilityElement(true)
         setAccessibilityRole(.image)
         setAccessibilityLabel("Chopper, your break buddy")
-        animationTimer = Timer(timeInterval: 0.12, repeats: true) { [weak self] _ in
+        animationTimer = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             if !self.reduceMotion { self.needsDisplay = true }
         }
