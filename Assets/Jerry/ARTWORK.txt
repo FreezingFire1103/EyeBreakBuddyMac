@@ -1,0 +1,33 @@
+Jerry artwork, 2026-10-24
+
+Eight original generated poses of Jerry from Tom and Jerry, created with the
+built-in image_gen tool. Final PNGs processed locally using Apple's Vision
+foreground instance masks, explicitly authorized by the user after the generator
+failed to produce transparency. Each pose remains a separate alpha PNG.
+
+Final sheet prompt:
+Transparent animation sprite sheet of Jerry from Tom and Jerry, classic cartoon
+mouse. Eight full body poses arranged evenly in a four-column two-row grid.
+Top row: friendly standing; same pose blinking; happy arms-raised celebration;
+peeking around an invisible screen edge. Bottom row: left-facing walk step one;
+left-facing walk step two; happy dance leaning left; happy dance leaning right.
+Consistent classic brown fur, tan belly, large round ears, thin tail, clean
+cel-animation outlines. Same scale throughout, paws aligned along a shared
+baseline within each cell. Clear spacing between sprites. No text, no scenery,
+no other characters.
+
+Refinement prompt for the chosen sheet:
+Fix this sprite sheet for production: remove the entire brown backdrop and make
+background genuinely transparent alpha, no colored backdrop. Preserve all eight
+Jerry poses, clean outlines and design. Keep exactly 4 columns x 2 rows equal
+cells. Shrink all poses slightly to ensure generous transparent margins; NO pose
+may touch a cell boundary. Repair fourth/top-right hiding pose so entire Jerry
+body, both feet, ears, tail and two hands visible inside its cell: gripping an
+invisible edge on right. No actual wall or straight vertical cut through body.
+First two poses identical position and size, differing only eyes open/closed.
+All poses on same foot baseline per row. No text.
+
+Pose mapping:
+0 idle, 1 blink, 2 completion cheer, 3 edge peek, 4/5 left walk/run,
+6/7 voluntary-water dance. Rightward exit mirrors walk poses in native drawing.
+Rendering measures opaque bounds and foot anchors, preserving the floor line.

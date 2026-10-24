@@ -78,3 +78,12 @@ Dialogue refinement: uses macOS Chalkboard SE uppercase lettering (system fallba
 a smaller organic oval, short copy, and a separate native control area. Dialogue
 is intentionally distinct from the timer and actions. Done / add-water are the
 primary keyboard actions while the panel has focus. Celebrations hide controls.
+
+## Character selection
+
+Choose **Character → Chopper / Jerry** in the menu bar. Chopper remains the default;
+your selection is saved and applies immediately, including to an open reminder,
+without resetting its countdown or changing water totals. Jerry has idle/blink,
+walk/run, edge-peek, completion cheer, and voluntary water-dance poses. Both use
+the same settings, dialogue bubbles, pause/snooze, Reduce Motion support, and
+water controls. Voluntary menu logs skip hiding for both characters.

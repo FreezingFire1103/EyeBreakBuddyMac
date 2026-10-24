@@ -36,6 +36,34 @@ extension EyeBreakBuddyApp {
             assert(abs(foot.x - registeredFeet[0].x) < 0.25 && abs(foot.y - registeredFeet[0].y) < 0.25,
                    "Expression changes must keep feet registered to the same position")
         }
+        assert(ChopperView.jerryPoses.count == 8, "All Jerry actions need transparent assets")
+        for pose in ChopperView.jerryPoses {
+            let bitmap = NSBitmapImageRep(data: pose.image.tiffRepresentation!)!
+            assert(bitmap.hasAlpha && bitmap.colorAt(x: 0, y: 0)!.alphaComponent < 0.01)
+            assert(pose.source.width > 0 && pose.source.height > 0)
+        }
+        assert(ChopperView.jerryFrame(mood: .greeting, elapsed: 4.3, reduceMotion: false) == 1)
+        assert(ChopperView.jerryFrame(mood: .greeting, elapsed: 4.3, reduceMotion: true) == 0)
+        assert(ChopperView.jerryFrame(mood: .dance, elapsed: 0.4, reduceMotion: false) == 7)
+        assert(ChopperView.jerryFrame(mood: .dance, elapsed: 0.4, reduceMotion: true) == 6)
+        let jerryChoice = NSMenuItem()
+        jerryChoice.representedObject = "jerry"
+        showBreakPopup()
+        let switchingPanel = panel, switchingCountdown = countdownTimer
+        let waterBeforeSwitch = waterML
+        selectCharacter(jerryChoice)
+        assert(selectedCharacter == .jerry && defaults.string(forKey: "character") == "jerry")
+        assert(buddyView?.character == .jerry && panel === switchingPanel && countdownTimer === switchingCountdown)
+        assert(waterML == waterBeforeSwitch)
+        dismissPanel()
+        showWaterPopup()
+        assert(buddyView?.character == .jerry, "New panels must use saved selection")
+        dismissPanel()
+        jerryChoice.representedObject = "invalid"
+        selectCharacter(jerryChoice)
+        assert(selectedCharacter == .jerry)
+        jerryChoice.representedObject = "chopper"
+        selectCharacter(jerryChoice)
         assert(waterGoalML == 2500 && waterStepML == 250)
         assert(shortBreakInterval == 1200 && waterReminderInterval == 3600)
         // Preserve the original daily storage format.
@@ -145,7 +173,10 @@ extension EyeBreakBuddyApp {
                 }
                 assert(condition(), "Timed buddy transition did not complete")
             }
+            jerryChoice.representedObject = "jerry"
+            selectCharacter(jerryChoice)
             quickAdd(voluntaryItem)
+            assert(buddyView?.character == .jerry)
             assert(buddyPhase == .runningIn && confirmationTimer == nil)
             waitFor {
                 assert(self.buddyPhase != .peeking && self.peekTimer == nil,

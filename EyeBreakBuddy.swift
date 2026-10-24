@@ -1,5 +1,11 @@
 import Cocoa
 
+enum BuddyCharacter: String, CaseIterable {
+    case chopper, jerry
+    var title: String { self == .chopper ? "Chopper" : "Jerry" }
+}
+
+
 // Four poses share one transparent atlas. Animation runs only while a buddy is visible.
 final class ChopperView: NSView {
     enum Mood { case greeting, happy, dance, walkLeft, walkRight, runLeft, hiding }
@@ -61,6 +67,76 @@ final class ChopperView: NSView {
                       width: size.width, height: size.height)
     }
 
+    struct JerryPose {
+        let image: NSImage
+        let source: NSRect
+        let footX: CGFloat
+    }
+    static let jerryPoses: [JerryPose] = {
+        let directory = URL(fileURLWithPath: CommandLine.arguments[0]).standardizedFileURL
+            .deletingLastPathComponent().appendingPathComponent("Assets/Jerry")
+        return (0..<8).compactMap { index in
+            guard let image = NSImage(contentsOf: directory.appendingPathComponent("pose-\(index).png")),
+                  let data = image.tiffRepresentation, let bitmap = NSBitmapImageRep(data: data) else { return nil }
+            var left = bitmap.pixelsWide, right = 0, top = bitmap.pixelsHigh, bottom = 0
+            for y in 0..<bitmap.pixelsHigh {
+                for x in 0..<bitmap.pixelsWide where (bitmap.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.15 {
+                    left = min(left, x); right = max(right, x)
+                    top = min(top, y); bottom = max(bottom, y)
+                }
+            }
+            guard right > left && bottom > top else { return nil }
+            var footLeft = right, footRight = left
+            for y in (bottom - (bottom - top) / 8)...bottom {
+                for x in left...right where (bitmap.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.5 {
+                    footLeft = min(footLeft, x); footRight = max(footRight, x)
+                }
+            }
+            // Crop only for drawing; keep the original alpha assets intact.
+            return JerryPose(image: image,
+                source: NSRect(x: left, y: bitmap.pixelsHigh - bottom - 1,
+                               width: right - left + 1, height: bottom - top + 1),
+                footX: CGFloat(footLeft + footRight) / 2 - CGFloat(left))
+        }
+    }()
+    var character: BuddyCharacter = .chopper {
+        didSet {
+            setAccessibilityLabel("\(character.title), your break buddy")
+            needsDisplay = true
+        }
+    }
+    static func jerryFrame(mood: Mood, elapsed: TimeInterval, reduceMotion: Bool) -> Int {
+        switch mood {
+        case .hiding: return 3
+        case .happy: return 2
+        case .dance: return reduceMotion ? 6 : 6 + Int(elapsed / 0.36) % 2
+        case .walkLeft, .walkRight, .runLeft:
+            return reduceMotion ? 4 : 4 + Int(elapsed / (mood == .runLeft ? 0.12 : 0.32)) % 2
+        case .greeting:
+            return !reduceMotion && elapsed.truncatingRemainder(dividingBy: 4.5) > 4.15 ? 1 : 0
+        }
+    }
+    private func drawJerry(elapsed: TimeInterval) {
+        guard Self.jerryPoses.count == 8 else {
+            ("🐭" as NSString).draw(in: bounds.insetBy(dx: 30, dy: 50),
+                withAttributes: [.font: NSFont.systemFont(ofSize: 90)])
+            return
+        }
+        let frame = Self.jerryFrame(mood: mood, elapsed: elapsed, reduceMotion: reduceMotion)
+        let pose = Self.jerryPoses[frame]
+        let scale = min(180 / pose.source.height, (bounds.width - 10) / pose.source.width)
+        let destination = NSRect(x: bounds.midX - pose.footX * scale, y: 34,
+                                 width: pose.source.width * scale, height: pose.source.height * scale)
+        NSGraphicsContext.saveGraphicsState()
+        if mood == .walkRight {
+            let mirror = NSAffineTransform()
+            mirror.translateX(by: bounds.width, yBy: 0); mirror.scaleX(by: -1, yBy: 1); mirror.concat()
+        }
+        pose.image.draw(in: destination, from: pose.source, operation: .sourceOver, fraction: 1,
+                        respectFlipped: true, hints: [.interpolation: NSImageInterpolation.high])
+        NSGraphicsContext.restoreGraphicsState()
+    }
+
     private var animationTimer: Timer?
     private var started = Date()
     var mood: Mood = .greeting { didSet { started = Date(); needsDisplay = true } }
@@ -87,6 +163,7 @@ final class ChopperView: NSView {
         super.draw(dirtyRect)
         NSColor.clear.setFill()
         bounds.fill(using: .copy)
+        if character == .jerry { drawJerry(elapsed: Date().timeIntervalSince(started)); return }
         guard let atlas = Self.atlas else {
             ("🦌" as NSString).draw(in: bounds.insetBy(dx: 30, dy: 50),
                                    withAttributes: [.font: NSFont.systemFont(ofSize: 90)])
@@ -206,6 +283,9 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
     private var dayKey = ""
     private var isBreakVisible = false
     private var breakSnoozed = false
+    private var selectedCharacter: BuddyCharacter {
+        BuddyCharacter(rawValue: defaults.string(forKey: "character") ?? "") ?? .chopper
+    }
     private var waterGoalML: Int { defaults.integer(forKey: "goalML") }
     private var waterStepML: Int { defaults.integer(forKey: "stepML") }
     private var shortBreakInterval: TimeInterval { Double(defaults.integer(forKey: "eyeMinutes") * 60) }
@@ -324,6 +404,12 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
         }
         item(menu, "Resume reminders", #selector(resumeReminders)).isEnabled = isPaused
         menu.addItem(.separator())
+        let characters = NSMenu()
+        item(menu, "Character: \(selectedCharacter.title)").submenu = characters
+        for character in BuddyCharacter.allCases {
+            item(characters, character.title, #selector(selectCharacter(_:)), value: character.rawValue,
+                 checked: selectedCharacter == character)
+        }
         let settings = NSMenu()
         item(menu, "Settings").submenu = settings
         choices(settings, "Eye break interval: \(Int(shortBreakInterval / 60)) min", key: "eyeMinutes",
@@ -348,6 +434,15 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
         menu.addItem(.separator())
         item(menu, "Quit Eye Break Buddy", #selector(quitApp))
         statusItem.menu = menu
+    }
+
+    @objc private func selectCharacter(_ sender: NSMenuItem) {
+        guard let value = sender.representedObject as? String,
+              let character = BuddyCharacter(rawValue: value) else { return }
+        defaults.set(character.rawValue, forKey: "character")
+        // Switching appearance must not replace the panel or reset a countdown.
+        buddyView?.character = character
+        rebuildMenu()
     }
 
     private func scheduleTimers() {
@@ -512,6 +607,7 @@ final class EyeBreakBuddyApp: NSObject, NSApplicationDelegate, NSMenuDelegate, N
                                             width: 195 * buddyScale, height: 250 * buddyScale))
         // Preserve drawing coordinates while uniformly shrinking every pose to 90%.
         buddy.setBoundsSize(NSSize(width: 195, height: 250))
+        buddy.character = selectedCharacter
         buddy.mood = happy ? .happy : .greeting
         root.addSubview(buddy)
         buddyView = buddy
