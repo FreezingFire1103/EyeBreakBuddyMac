@@ -90,6 +90,8 @@ water controls. Voluntary menu logs skip hiding for both characters.
 
 Jerry travel uses 22 cleaned animation frames at 70 ms per frame, rebuilt to
 match the original Jerry character's face, round pink ears, colors and proportions.
+The approved walk has a lifted chin, rolling steps and relaxed closed eyes,
+following the supplied cartoon reference.
 The frames share a fixed canvas; exit mirrors entrance. Travel remains at
 110 points/second. Original idle/blink, hiding, cheer and water-dance poses are
 retained. See docs/Jerry-approved-actions.gif for the approved action preview
